@@ -14,7 +14,7 @@ from tools.llm import LLMClient
 load_dotenv()
 
 # os.environ['SC2PATH'] = '/data/shy/RL_LLM/StarCraftII'
-os.environ['SC2PATH'] = '/data2/SC2/StarCraftII'
+os.environ['SC2PATH'] = 'C:/Program Files (x86)/StarCraft II'
 # os.environ['SC2PATH'] = 'D:/SC2/StarCraft II'
 
 def parse_args():
@@ -38,8 +38,9 @@ def parse_args():
         "--model_name", 
         type=str, 
         required=False,
+        default="glm-4.5-flash",
         # default='Qwen2.5-72B-Instruct',
-        default='Qwen2.5-7B-Instruct/checkpoint-7000/',
+        # default='Qwen2.5-7B-Instruct/checkpoint-7000/',
         # default='deepseek-ai/DeepSeek-R1-Distill-Llama-70B',
         # default='DeepSeek-R1-Distill-Qwen-32B',
         # default='Qwen2.5-72B-Instruct',
@@ -72,10 +73,11 @@ def parse_args():
         "--base_url",
         type=str,
         # default=os.getenv("BASE_URL", ""),
+        default="https://open.bigmodel.cn/api/paas/v4/",
         # default="http://172.18.132.21:30000/v1",
         # default="http://172.18.132.20:8815/v1",
         # default="http://172.18.30.165:8815/v1",
-        default="http://localhost:8815/v1",
+        # default="http://localhost:8815/v1",
         # default="http://172.18.30.165:12001/v1",
         # default="https://openrouter.ai/api/v1",
         help="Base URL for the LLM API service",
@@ -83,9 +85,8 @@ def parse_args():
     parser.add_argument(
         "--api_key",
         type=str,
-        # default=os.getenv("API_KEY", ""),
-        default="EMPTY",
-        # default="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",
+        default=os.getenv("API_KEY", ""),
+        # default="EMPTY",
         # default="sk-11223344",
         # default="no-key-required",
         help="API key for the LLM API service",

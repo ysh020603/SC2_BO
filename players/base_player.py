@@ -80,6 +80,7 @@ class BasePlayer(BotAI):
             os.makedirs(f"{self.log_path}/observation", exist_ok=True)
             self.logger = setup_logger(f"{player_name}_{self.real_model_name}", log_dir=self.log_path)
 
+        self.entity_id_name = {}
         self._tag_to_id = {}
         self._id_to_tag = {}
         self._id_to_abilities = {}
@@ -549,11 +550,76 @@ class BasePlayer(BotAI):
                 prompt_enemy += f"coordinate {mineral} has {len(self.enemy_location_minerals[mineral])} enemy's structures; "
         
         return prompt_scout + prompt_scouted + prompt_enemy
+    
+    # 记录所有我方和敌方的单位/建筑的名称、Tag和ID
+    def _record_entity_ids(self):
+        """
+        将所有我方和敌方的单位/建筑的名称、Tag和简单ID记录到
+        log_path 目录下的 entity_id_name.json 文件中。
+        """
+        # 如果未启用日志记录，则直接返回
+        if not self.enable_logging:
+            return
+
+        # 初始化数据结构
+        entity_data = {
+            "allied": {
+                "units": [],
+                "structures": []
+            },
+            "enemy": {
+                "units": [],
+                "structures": []
+            }
+        }
+
+        def process_entities(entity_list):
+            """辅助函数：处理单位列表并返回包含映射信息的字典列表"""
+            data_list = []
+            for unit in entity_list:
+                try:
+                    # 这步是关键：调用 tag_to_id 会获取（或创建）
+                    # LLM 所能看到的简单ID。
+                    # 这能确保我们的JSON文件与LLM的观察保持同步。
+                    simple_id = self.tag_to_id(unit.tag)
+                    
+                    data_list.append({
+                        "name": unit.name,
+                        "tag": unit.tag,
+                        "id": simple_id
+                    })
+                except Exception as e:
+                    # 避免单位在处理瞬间死亡等边缘情况导致崩溃
+                    self.logger.warning(f"Failed to process entity {unit.tag} for ID logging: {e}")
+            
+            # 按 simple_id 排序，方便查看
+            return sorted(data_list, key=lambda x: x["id"])
+
+        # 填充所有数据
+        entity_data["allied"]["units"] = process_entities(self.units)
+        entity_data["allied"]["structures"] = process_entities(self.structures)
+        entity_data["enemy"]["units"] = process_entities(self.enemy_units)
+        entity_data["enemy"]["structures"] = process_entities(self.enemy_structures)
+
+        # 将数据写入JSON文件
+        if self.enable_logging:
+            # 确定文件路径（保存在当前日志文件夹中）
+            # self.log_path 在 __init__ 中定义
+            file_path = os.path.join(self.log_path, "entity_id_name.json")
+            try:
+                with open(file_path, "w", encoding="utf-8") as f:
+                    json.dump(entity_data, f, indent=4, ensure_ascii=False)
+            except Exception as e:
+                # 记录写入错误，但不应让主程序崩溃
+                self.logger.error(f"Failed to write entity_id_name.json: {e}")
+
+        return entity_data
 
     ################ obs to text
     async def obs_to_text(self):
         scout_info = self.history_prompt()
         cc_locations = self.get_mineral_locations()
+        self._record_entity_ids()
         
         if len(cc_locations):
             cc_loc = "\nHere are the coordinates you can consider for building your Command Center. These coordinate can only be used to build Command Center. " + str(cc_locations)

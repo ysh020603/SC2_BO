@@ -50,6 +50,14 @@ class LLMClient:
         messages.append({"role": "user", "content": prompt})
 
         def call_thread():
+            if model_name == "glm-4.5-flash":
+                extra_body = {
+                    "thinking": {
+                        "type": "disabled"
+                    }
+                }
+            else:
+                extra_body = None
             completion = self.client.chat.completions.create(
                 model=model_name,
                 messages=messages,
@@ -61,8 +69,8 @@ class LLMClient:
                 # repetition_penalty=repetition_penalty,
                 # presence_penalty=presence_penalty,
                 timeout=timeout,
+                extra_body=extra_body,
             )
-
             response = completion.choices[0].message.content.strip()
             return response
 
