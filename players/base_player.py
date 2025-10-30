@@ -559,6 +559,10 @@ class BasePlayer(BotAI):
 
         同时，将此信息保存到 log_path/entity_id_name/ 文件夹下，
         并以当前帧数 (self.step_count) 命名。
+        这个函数中的 is_alive 对于己方单位，指的是单位是否存活，
+        对于敌方单位，指的是单位是否可观测到，is_alive 为零表示不可观测到或死亡。
+        
+        [MODIFIED] new_id 现在存储为 int 类型的序列号。
         """
 
         # 1. 如果未启用日志记录，则直接返回
@@ -609,7 +613,8 @@ class BasePlayer(BotAI):
                         # 2. 生成 new_id
                         counter_key = f"{alliance}_{entity_type}_{name}"
                         next_seq_num = self._entity_new_id_counters.get(counter_key, 1)
-                        new_id = f"{name}_{next_seq_num}"
+                        # new_id = f"{name}_{next_seq_num}" # <--- [OLD]
+                        new_id = next_seq_num # <--- [NEW]
                         self._entity_new_id_counters[counter_key] = next_seq_num + 1
 
                         # 3. 存入 _entity_tag_map
@@ -618,7 +623,7 @@ class BasePlayer(BotAI):
                             "name": name,
                             "tag": tag,
                             "id": simple_id,
-                            "new_id": new_id,
+                            "new_id": new_id, # <--- [NEW] 存储为 int
                             "_alliance": alliance,
                             "_type": entity_type
                         }
@@ -671,7 +676,8 @@ class BasePlayer(BotAI):
         # 7. 排序 (按 new_id 的序列号排序)
         def sort_by_new_id_number(entry):
             try:
-                return int(entry["new_id"].split('_')[-1])
+                # return int(entry["new_id"].split('_')[-1]) # <--- [OLD]
+                return entry["new_id"] # <--- [NEW] 直接按 int 排序
             except:
                 return 0
             
